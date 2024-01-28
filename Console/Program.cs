@@ -1,5 +1,11 @@
-﻿using System.Net;
+﻿using AngleSharp;
+using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
+using Console.Context;
+using Console.Domain;
 using Shared;
+
+#region init
 
 // setup dotenv
 DotEnv.Load();
@@ -12,47 +18,54 @@ using (new ChangeConsoleColor(ConsoleColor.Red))
     WriteLine(new string('.', 50));
 }
 
+// make requests?
+// await MakeRequests(domain);
 
-HttpClientHandler handler = new();
-CookieContainer cookieContainer = new();
-handler.CookieContainer = cookieContainer;
-
-WriteLine("Send request? (Y/n)");
-
-using HttpClient client = new(handler);
-Cookie wpLoggedIn = new(name: Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_NAME") ?? "wp_login",
-    value:
-    Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_VALUE")
-)
-{
-    Domain = domain
-};
-cookieContainer.Add(wpLoggedIn);
-Cookie wpSec = new(Environment.GetEnvironmentVariable("WORDPRESS_SEC_NAME") ?? "wp_sec",
-    Environment.GetEnvironmentVariable("WORDPRESS_SEC_VALUE"))
-{
-    Domain = domain
-};
-cookieContainer.Add(wpSec);
-
-string? key = ReadLine();
-if (key?.ToLower() != "y")
-{
-    Environment.Exit(0);
-}
-
-HttpResponseMessage response = await client.GetAsync($"https://{domain}/2023/10/26/239-back-2023/");
-response.WriteRequestToConsole();
+// parse using angle sharp
 
 string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+string htmlPath = Path.Combine(docPath, "log.html");
 
-await using StreamWriter outputFile = new(Path.Combine(docPath, $"log-{DateTime.Now.ToString("s")}.txt"));
-string content = await response.Content.ReadAsStringAsync();
-outputFile.Write(content);
+string htmlContent = await File.ReadAllTextAsync(htmlPath);
 
-// get links for each page/exercise
-for (int i = 0; i < 25; i++)
+// CODE to parse individual workout
+IConfiguration config = Configuration.Default.WithDefaultLoader();
+IBrowsingContext context = BrowsingContext.New(config);
+IDocument document = await context.OpenAsync(req => req.Content(htmlContent));
+// serialize the original doc
+IHtmlCollection<IElement> exorciseContainerList = document.QuerySelectorAll(".et_pb_blurb_container");
+List<Exercise> exercises = [];
+
+// await using StreamWriter outputFile = new(Path.Combine(docPath, $"titles-{DateTime.Now.ToString("s")}.txt"));
+foreach (var container in exorciseContainerList)
 {
-    HttpResponseMessage responseMessage =
-        await client.GetAsync($"https://{domain}/itt-workouts/page/{i}/?el_dbe_page");
+    IElement? h1 = container.QuerySelector(".et_pb_module_header");
+    IHtmlAnchorElement? anchor = (IHtmlAnchorElement?)h1?.FirstChild;
+
+    if (anchor is null) continue;
+
+    IElement? desc = container.QuerySelector(".et_pb_blurb_description");
+
+    Exercise exercise = new()
+    {
+        Name = anchor.TextContent,
+        Description = desc?.TextContent ?? "",
+        VideoLink = anchor.Href
+    };
+
+    exercises.Add(exercise);
 }
+
+
+
+foreach (var exercise in exercises)
+{
+    WriteLine("EXERCISE:");
+    WriteLine($"NAME: {exercise.Name}, VIDEO: {exercise.VideoLink}");
+    WriteLine($"DESCRIPTION: {exercise.Description}");
+}
+
+#endregion
+
+using AppDbContext appDbContext = new();
+
