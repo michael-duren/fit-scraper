@@ -49,94 +49,6 @@ namespace Console.Migrations
                     b.ToTable("Exercises");
                 });
 
-            modelBuilder.Entity("Console.Domain.ExerciseExerciseType", b =>
-                {
-                    b.Property<int>("ExerciseExerciseTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ExerciseExerciseTypeId"));
-
-                    b.Property<int>("ExerciseId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ExerciseTypeId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("ExerciseExerciseTypeId");
-
-                    b.ToTable("ExerciseExerciseTypes");
-                });
-
-            modelBuilder.Entity("Console.Domain.ExerciseType", b =>
-                {
-                    b.Property<int>("ExerciseTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ExerciseTypeId"));
-
-                    b.Property<string>("ExerciseTypeName")
-                        .IsRequired()
-                        .HasColumnType("varchar(100)");
-
-                    b.HasKey("ExerciseTypeId");
-
-                    b.ToTable("ExerciseTypes");
-
-                    b.HasData(
-                        new
-                        {
-                            ExerciseTypeId = 1,
-                            ExerciseTypeName = "Back"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 2,
-                            ExerciseTypeName = "Biceps"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 3,
-                            ExerciseTypeName = "Chest"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 4,
-                            ExerciseTypeName = "Shoulders"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 5,
-                            ExerciseTypeName = "Triceps"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 6,
-                            ExerciseTypeName = "Legs"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 7,
-                            ExerciseTypeName = "Calves"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 8,
-                            ExerciseTypeName = "Push"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 9,
-                            ExerciseTypeName = "Pull"
-                        },
-                        new
-                        {
-                            ExerciseTypeId = 10,
-                            ExerciseTypeName = "Push/Pull"
-                        });
-                });
-
             modelBuilder.Entity("Console.Domain.Workout", b =>
                 {
                     b.Property<int>("WorkoutId")
@@ -151,6 +63,94 @@ namespace Console.Migrations
                     b.HasKey("WorkoutId");
 
                     b.ToTable("Workouts");
+                });
+
+            modelBuilder.Entity("Console.Domain.WorkoutType", b =>
+                {
+                    b.Property<int>("WorkoutTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("WorkoutTypeId"));
+
+                    b.Property<string>("WorkoutTypeName")
+                        .IsRequired()
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("WorkoutTypeId");
+
+                    b.ToTable("WorkoutTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            WorkoutTypeId = 1,
+                            WorkoutTypeName = "Back"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 2,
+                            WorkoutTypeName = "Biceps"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 3,
+                            WorkoutTypeName = "Chest"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 4,
+                            WorkoutTypeName = "Shoulders"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 5,
+                            WorkoutTypeName = "Triceps"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 6,
+                            WorkoutTypeName = "Legs"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 7,
+                            WorkoutTypeName = "Calves"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 8,
+                            WorkoutTypeName = "Push"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 9,
+                            WorkoutTypeName = "Pull"
+                        },
+                        new
+                        {
+                            WorkoutTypeId = 10,
+                            WorkoutTypeName = "Push/Pull"
+                        });
+                });
+
+            modelBuilder.Entity("Console.Domain.WorkoutWorkoutType", b =>
+                {
+                    b.Property<int>("WorkoutWorkoutTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("WorkoutWorkoutTypeId"));
+
+                    b.Property<int>("WorkoutId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WorkoutTypeId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("WorkoutWorkoutTypeId");
+
+                    b.ToTable("WorkoutWorkoutTypes");
                 });
 #pragma warning restore 612, 618
         }

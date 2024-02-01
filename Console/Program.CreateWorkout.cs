@@ -23,61 +23,77 @@ public partial class Program
         // mark the start of transaction
         await using (IDbContextTransaction transaction = await context.Database.BeginTransactionAsync())
         {
-            #region create initial workout
-
-            Workout workout = new()
+            try
             {
-                Name = workoutName
-            };
-            context.Workouts.Add(workout);
-            await context.SaveChangesAsync();
+                #region create initial workout
 
-            #endregion
-
-            List<ExerciseType> exerciseTypes = await
-                context
-                    .ExerciseTypes
-                    .Where(et => workout.Name.ToLower().Contains(et.ExerciseTypeName.ToLower()))
-                    .ToListAsync();
-
-
-            foreach (var container in exorciseContainerList)
-            {
-                IElement? h1 = container.QuerySelector(".et_pb_module_header");
-                IHtmlAnchorElement? anchor = (IHtmlAnchorElement?)h1?.FirstChild;
-
-                if (anchor is null) continue;
-
-                IElement? desc = container.QuerySelector(".et_pb_blurb_description");
-
-                Exercise exercise = new()
+                Workout workout = new()
                 {
-                    Name = anchor.TextContent,
-                    Description = desc?.TextContent ?? "",
-                    VideoLink = anchor.Href
+                    Name = workoutName
                 };
+                context.Workouts.Add(workout);
+                await context.SaveChangesAsync();
 
-                exercises.Add(exercise);
+                #endregion
+
+                List<WorkoutType> workoutTypes = await
+                    context
+                        .WorkoutTypes
+                        .Where(et => workout.Name.ToLower().Contains(et.WorkoutTypeName.ToLower()))
+                        .ToListAsync();
+
+                foreach (WorkoutType workoutType in workoutTypes)
+                {
+                    context.Add(new WorkoutWorkoutType
+                    {
+                        WorkoutId = workout.WorkoutId,
+                        WorkoutTypeId = workoutType.WorkoutTypeId
+                    });
+                }
+
+                foreach (var container in exorciseContainerList)
+                {
+                    IElement? h1 = container.QuerySelector(".et_pb_module_header");
+                    IHtmlAnchorElement? anchor = (IHtmlAnchorElement?)h1?.FirstChild;
+
+                    if (anchor is null) continue;
+
+                    IElement? desc = container.QuerySelector(".et_pb_blurb_description");
+
+                    Exercise exercise = new()
+                    {
+                        Name = anchor.TextContent.Trim(),
+                        Description = desc?.TextContent.Trim() ?? "",
+                        VideoLink = anchor.Href.Trim(),
+                        WorkoutId = workout.WorkoutId
+                    };
+
+                    exercises.Add(exercise);
+                }
+
+                await context.Exercises.AddRangeAsync(exercises);
+
+                await context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync(); // stop here if not correct
+                using (new ChangeConsoleColor(ConsoleColor.Red))
+                {
+                    WriteLine(e);
+                }
+
+                throw;
             }
 
+            // if we make it here it went alright
+            await transaction.CommitAsync();
 
-            using (new ChangeConsoleColor(ConsoleColor.Blue))
+            // write result to console
+            using (new ChangeConsoleColor(ConsoleColor.Green))
             {
-                WriteLine($"WORKOUT: {workout.Name}");
-                WriteLine();
-
-                foreach (ExerciseType exerciseType in exerciseTypes)
-                {
-                    WriteLine($"WORKOUT TYPE: {exerciseType.ExerciseTypeName}");
-                }
-
-                WriteLine($"EXERCISES: ");
-                foreach (Exercise exercise in exercises)
-                {
-                    WriteLine("EXERCISE:");
-                    WriteLine($"NAME: {exercise.Name.Trim()}, VIDEO: {exercise.VideoLink.Trim()}");
-                    WriteLine($"DESCRIPTION: {exercise.Description.Trim()}");
-                }
+                WriteLine($"WORKOUT: {workoutName}");
+                WriteLine("WRITTEN TO DB");
             }
         }
     }

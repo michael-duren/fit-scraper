@@ -1,8 +1,7 @@
-﻿using AngleSharp;
+﻿using System.Net;
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
 using Console.Context;
-using Console.Domain;
+using Npgsql;
 using Shared;
 
 #region init
@@ -18,24 +17,63 @@ using (new ChangeConsoleColor(ConsoleColor.Red))
     WriteLine(new string('.', 50));
 }
 
-// make requests?
-// await MakeRequests(domain);
-
-// parse using angle sharp
-
-
 string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-string htmlPath = Path.Combine(docPath, "log.html");
 
-string htmlContent = await File.ReadAllTextAsync(htmlPath);
-
-// CODE to parse individual workout
-IConfiguration config = Configuration.Default.WithDefaultLoader();
-IBrowsingContext context = BrowsingContext.New(config);
-IDocument document = await context.OpenAsync(req => req.Content(htmlContent));
+#endregion
 
 await using AppDbContext appDbContext = new();
 
-await CreateWorkout(document, appDbContext);
+if (!(await appDbContext.Database.CanConnectAsync()))
+{
+    throw new NpgsqlException($"ERROR CONNECTING");
+}
+
+using (new ChangeConsoleColor(ConsoleColor.Green))
+{
+    WriteLine("CONNECTED TO DB");
+}
+
+#region setup httpclient
+
+HttpClientHandler handler = new();
+CookieContainer cookieContainer = new();
+handler.CookieContainer = cookieContainer;
+
+using HttpClient client = new(handler);
+Cookie wpLoggedIn = new(name: Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_NAME") ?? "wp_login",
+    value:
+    Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_VALUE")
+)
+{
+    Domain = domain
+};
+cookieContainer.Add(wpLoggedIn);
+Cookie wpSec = new(Environment.GetEnvironmentVariable("WORDPRESS_SEC_NAME") ?? "wp_sec",
+    Environment.GetEnvironmentVariable("WORDPRESS_SEC_VALUE"))
+{
+    Domain = domain
+};
+cookieContainer.Add(wpSec);
 
 #endregion
+
+#region prompt user
+
+WriteLine("Send request? (Y/n)");
+
+string? key = ReadLine();
+if (key?.ToLower() != "y")
+{
+    Environment.Exit(0);
+}
+
+#endregion
+
+List<IDocument> documents = await MakeRequests(domain, client);
+
+foreach (IDocument document in documents)
+{
+    await CreateWorkout(document, appDbContext);
+}
+
+WriteLine("IF WE GOT THIS FAR WE PROBS DID IT");

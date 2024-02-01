@@ -8,25 +8,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Console.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Update : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "ExerciseExerciseTypes",
-                columns: table => new
-                {
-                    ExerciseExerciseTypeId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ExerciseId = table.Column<int>(type: "integer", nullable: false),
-                    ExerciseTypeId = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExerciseExerciseTypes", x => x.ExerciseExerciseTypeId);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Exercises",
                 columns: table => new
@@ -44,19 +30,6 @@ namespace Console.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ExerciseTypes",
-                columns: table => new
-                {
-                    ExerciseTypeId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ExerciseTypeName = table.Column<string>(type: "varchar(100)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExerciseTypes", x => x.ExerciseTypeId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Workouts",
                 columns: table => new
                 {
@@ -69,9 +42,36 @@ namespace Console.Migrations
                     table.PrimaryKey("PK_Workouts", x => x.WorkoutId);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "WorkoutTypes",
+                columns: table => new
+                {
+                    WorkoutTypeId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkoutTypeName = table.Column<string>(type: "varchar(100)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkoutTypes", x => x.WorkoutTypeId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkoutWorkoutTypes",
+                columns: table => new
+                {
+                    WorkoutWorkoutTypeId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkoutId = table.Column<int>(type: "integer", nullable: false),
+                    WorkoutTypeId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkoutWorkoutTypes", x => x.WorkoutWorkoutTypeId);
+                });
+
             migrationBuilder.InsertData(
-                table: "ExerciseTypes",
-                columns: new[] { "ExerciseTypeId", "ExerciseTypeName" },
+                table: "WorkoutTypes",
+                columns: new[] { "WorkoutTypeId", "WorkoutTypeName" },
                 values: new object[,]
                 {
                     { 1, "Back" },
@@ -91,16 +91,16 @@ namespace Console.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ExerciseExerciseTypes");
-
-            migrationBuilder.DropTable(
                 name: "Exercises");
 
             migrationBuilder.DropTable(
-                name: "ExerciseTypes");
+                name: "Workouts");
 
             migrationBuilder.DropTable(
-                name: "Workouts");
+                name: "WorkoutTypes");
+
+            migrationBuilder.DropTable(
+                name: "WorkoutWorkoutTypes");
         }
     }
 }

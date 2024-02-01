@@ -1,72 +1,66 @@
 using System.Net;
+using AngleSharp;
+using AngleSharp.Dom;
 using Shared;
 
 public partial class Program
 {
-    static async Task MakeRequests(string domain)
+    static async Task<List<IDocument>> MakeRequests(string domain, HttpClient client)
     {
-        #region setup httpclient
+        #region request
 
-        HttpClientHandler handler = new();
-        CookieContainer cookieContainer = new();
-        handler.CookieContainer = cookieContainer;
+        List<string> allLinks = [];
 
-        using HttpClient client = new(handler);
-        Cookie wpLoggedIn = new(name: Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_NAME") ?? "wp_login",
-            value:
-            Environment.GetEnvironmentVariable("WORDPRESS_LOGGED_IN_VALUE")
-        )
+        // get links
+        for (int i = 0; i < 25; i++)
         {
-            Domain = domain
-        };
-        cookieContainer.Add(wpLoggedIn);
-        Cookie wpSec = new(Environment.GetEnvironmentVariable("WORDPRESS_SEC_NAME") ?? "wp_sec",
-            Environment.GetEnvironmentVariable("WORDPRESS_SEC_VALUE"))
-        {
-            Domain = domain
-        };
-        cookieContainer.Add(wpSec);
+            // get url
+            string url = i == 0 ? $"https://{domain}/itt-workouts/" : $"https://{domain}/itt-workouts/page/{i + 1}/";
+            HttpResponseMessage response = await client.GetAsync(url);
 
-        #endregion
-
-        #region prompt user
-
-        WriteLine("Send request? (Y/n)");
-
-        string? key = ReadLine();
-        if (key?.ToLower() != "y")
-        {
-            Environment.Exit(0);
+            if (response.IsSuccessStatusCode)
+            {
+                IConfiguration config = Configuration.Default.WithDefaultLoader();
+                IBrowsingContext context = BrowsingContext.New(config);
+                string content = await response.Content.ReadAsStringAsync();
+                IDocument document = await context.OpenAsync(req => req.Content(content));
+                List<string> parsedLinks = ParseWorkoutLinks(document: document);
+                allLinks.AddRange(parsedLinks);
+            }
+            else
+            {
+                using (new ChangeConsoleColor(ConsoleColor.Red))
+                {
+                    WriteLine($"ERROR WITH REQUEST: {url}");
+                }
+            }
         }
 
         #endregion
 
-        #region request
+        List<IDocument> workoutDetailPages = [];
+        foreach (var allLink in allLinks)
+        {
+            var workoutDetails = await client.GetAsync(allLink);
 
-        HttpResponseMessage response = await client.GetAsync($"https://{domain}/2023/10/26/239-back-2023/");
-        response.WriteRequestToConsole();
+            if (workoutDetails.IsSuccessStatusCode)
+            {
+                IConfiguration config = Configuration.Default.WithDefaultLoader();
+                IBrowsingContext context = BrowsingContext.New(config);
+                string content = await workoutDetails.Content.ReadAsStringAsync();
+                IDocument document = await context.OpenAsync(req => req.Content(content));
 
-        #endregion
+                workoutDetailPages.Add(document);
+            }
+            else
+            {
+                using (new ChangeConsoleColor(ConsoleColor.Red))
+                {
+                    WriteLine($"ERROR WITH REQUEST: {allLink}");
+                }
+            }
+        }
 
-        string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-        await using StreamWriter outputFile = new(Path.Combine(docPath, $"log-{DateTime.Now.ToString("s")}.txt"));
-        string content = await response.Content.ReadAsStringAsync();
-        await outputFile.WriteAsync(content);
-
-
-// HttpResponseMessage responseMessage = await client.GetAsync($"https://{domain}/itt-workouts");
-// response\
-
-
-// HttpResponseMessage responseMessage = await client.GetAsync($"https://{domain}/itt-workouts/page/{i}/?el_dbe_page");
-
-
-// get links for each page/exercise
-// for (int i = 0; i < 25; i++)
-// {
-//     HttpResponseMessage responseMessage =
-//         await client.GetAsync($"https://{domain}/itt-workouts/page/{i}/?el_dbe_page");
-// }
+        return workoutDetailPages;
     }
 }
